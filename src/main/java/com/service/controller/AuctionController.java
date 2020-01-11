@@ -106,6 +106,55 @@ public class AuctionController {
         return result;
     }
 
+    @GetMapping("/getUserCreatedAuctions")
+    public AuctionItem[] getUserCreatedAuctions(@RequestParam(value = "userName") String userName) {
+        List<AuctionItem> auctionItemList = new ArrayList<>();
+        air.findAll().iterator().forEachRemaining(auctionItemList::add);
+
+        int k = 0;
+        AuctionItem[] result = new AuctionItem[auctionItemList.size()];
+        for (int i = 0; i < auctionItemList.size(); i++) {
+            if (userName.equals(auctionItemList.get(i).getUserName()))
+                result[k++] = auctionItemList.get(i);
+        }
+
+        AuctionItem[] actualResult = new AuctionItem[k];
+        for (int i = 0; i < k; i++) {
+            actualResult[i] = result[i];
+        }
+
+        return actualResult;
+    }
+
+    @GetMapping("/getUserBidAuctions")
+    public AuctionItem[] getUserBidAuctions(@RequestParam(value = "userName") String userName) {
+        List<AuctionItem> auctionItemList = new ArrayList<>();
+        air.findAll().iterator().forEachRemaining(auctionItemList::add);
+
+        int k = 0;
+        AuctionItem[] result = new AuctionItem[auctionItemList.size()];
+        for (int i = 0; i < auctionItemList.size(); i++) {
+            List<Bid> bidList = new ArrayList<>();
+            br.findAll().iterator().forEachRemaining(bidList::add);
+
+            for (int j = 0; j < bidList.size(); j++) {
+                if (bidList.get(j).getAuctionItemId() == auctionItemList.get(i).getId() &&
+                        bidList.get(j).getUserName().equals(userName)) {
+                    result[k++] = auctionItemList.get(i);
+                    break;
+                }
+            }
+
+        }
+
+        AuctionItem[] actualResult = new AuctionItem[k];
+        for (int i = 0; i < k; i++) {
+            actualResult[i] = result[i];
+        }
+
+        return actualResult;
+    }
+
     @GetMapping("/placeBid")
     public String placeBid(
             @RequestParam(value = "userName") String userName,
@@ -137,6 +186,12 @@ public class AuctionController {
         bid.setBid(bidValue);
 
         bid = br.save(bid);
+
+        AuctionItem auctionItem = optionalAuctionItem.get();
+        auctionItem.setCurrentBid(bidValue);
+        auctionItem.setBidId(bid.getId());
+
+        auctionItem = air.save(auctionItem);
 
         if (bid != null)
             return "OK";
